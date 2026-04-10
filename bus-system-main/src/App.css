@@ -1,0 +1,98 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-inline: 1px solid var(--border);
+  background: radial-gradient(circle at top left, #fff7dc 0%, transparent 45%),
+    radial-gradient(circle at top right, #ddefff 0%, transparent 42%), #fafdff;
+}
+
+.website-view {
+  text-align: center;
+  padding: 88px 20px 40px;
+}
+
+.label {
+  margin: 0;
+  color: #0e679f;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.website-view h1 {
+  margin: 10px 0;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+}
+
+.message {
+  margin: 0 auto;
+  max-width: 60ch;
+  color: #4b6074;
+}
+
+.prompt-layer {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 20, 32, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.prompt-card {
+  width: min(94vw, 430px);
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #d6e0eb;
+  padding: 22px;
+  box-shadow: 0 16px 48px rgba(0, 25, 44, 0.2);
+}
+
+.prompt-card h2 {
+  margin: 0 0 8px;
+}
+
+.prompt-card p {
+  margin: 0;
+  color: #51667a;
+}
+
+.prompt-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.install-btn,
+.later-btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.install-btn {
+  border: none;
+  background: linear-gradient(135deg, #0d6fb4, #1ca07f);
+  color: #f8f8f8;
+}
+
+.later-btn {
+  border: 1px solid #c4d2df;
+  background: #f8fbff;
+  color: #2a445c;
+}
+
+.footer {
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+.footer p {
+  margin: 0;
+  color: #586b7f;
+}
