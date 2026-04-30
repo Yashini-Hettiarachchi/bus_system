@@ -8,9 +8,11 @@ function newsApiDevMiddleware() {
     name: 'news-api-dev-middleware',
     configureServer(server) {
       server.middlewares.use('/api/news', async (req, res, next) => {
-        const url = new URL(req.url || '/', 'http://localhost')
-        const query = Object.fromEntries(url.searchParams.entries())
-        let statusCode = 200
+        // Use the host from the request headers or fallback to 127.0.0.1
+        const host = req.headers?.host ? `http://${req.headers.host}` : 'http://127.0.0.1';
+        const url = new URL(req.url || '/', host);
+        const query = Object.fromEntries(url.searchParams.entries());
+        let statusCode = 200;
 
         const response = {
           status(code) {

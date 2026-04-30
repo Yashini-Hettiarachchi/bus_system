@@ -1,10 +1,10 @@
 // Vercel Serverless Function for /api/news
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
 
 const CURRENTS_API_URL = 'https://api.currentsapi.services/v1/search';
 const GNEWS_API_URL = 'https://gnews.io/api/v4/search';
 const NEWSDATA_API_URL = 'https://newsdata.io/api/1/latest';
-const RESULT_LIMIT = 6;
+const RESULT_LIMIT = 20;
 
 const LOCAL_DOMAINS = [
   'dailymirror.lk',
@@ -75,37 +75,118 @@ function prioritizeLocalArticles(articles, limit = RESULT_LIMIT) {
 }
 
 function normalizeCurrentsArticles(newsItems) {
-  return (Array.isArray(newsItems) ? newsItems : []).map((item) => ({
-    title: item.title || 'Untitled',
-    description: item.description || item.title || '',
-    url: item.url,
-    image: item.image,
-    publishedAt: item.published,
-    source: {
-      name: item.author || item.id || 'Currents',
+  // Map known domains to publication names
+  const domainToPublication = {
+    'dailymirror.lk': 'Daily Mirror',
+    'newsfirst.lk': 'News First',
+    'adaderana.lk': 'Ada Derana',
+    'dailynews.lk': 'Daily News',
+    'ft.lk': 'Daily FT',
+    'sundaytimes.lk': 'Sunday Times',
+    'island.lk': 'The Island',
+    'lankadeepa.lk': 'Lankadeepa',
+    'hirunews.lk': 'Hiru News',
+    'colombogazette.com': 'Colombo Gazette',
+    'economynext.com': 'EconomyNext',
+  };
+  return (Array.isArray(newsItems) ? newsItems : []).map((item) => {
+    let publication = '';
+    let domain = '';
+    if (item.url) {
+      try {
+        domain = new URL(item.url).hostname.replace('www.', '');
+        if (domainToPublication[domain]) {
+          publication = domainToPublication[domain];
+        } else {
+          publication = domain;
+        }
+      } catch { publication = ''; }
+    }
+    if (!publication && item.source && typeof item.source === 'string') publication = item.source;
+    if (!publication && item.author) publication = item.author;
+    return {
+      title: item.title || 'Untitled',
+      description: item.description || item.title || '',
       url: item.url,
-    },
-  }));
+      image: item.image,
+      publishedAt: item.published,
+      source: {
+        name: publication || 'Currents',
+        url: item.url,
+      },
+    };
+  });
 }
 
 function normalizeGnewsArticles(newsItems) {
-  return Array.isArray(newsItems) ? newsItems : [];
+  return (Array.isArray(newsItems) ? newsItems : []).map((item) => {
+    // GNews: source.name is usually the publication
+    let publication = '';
+    if (item.source && item.source.name) {
+      publication = item.source.name;
+    } else if (item.url) {
+      try {
+        const domain = new URL(item.url).hostname.replace('www.', '');
+        publication = domain;
+      } catch { publication = ''; }
+    }
+    return {
+      title: item.title || 'Untitled',
+      description: item.description || item.title || '',
+      url: item.url,
+      image: item.image,
+      publishedAt: item.publishedAt,
+      source: {
+        name: publication || 'GNews',
+        url: item.url,
+      },
+    };
+  });
 }
 
 function normalizeNewsDataArticles(newsItems) {
+  const domainToPublication = {
+    'dailymirror.lk': 'Daily Mirror',
+    'newsfirst.lk': 'News First',
+    'adaderana.lk': 'Ada Derana',
+    'dailynews.lk': 'Daily News',
+    'ft.lk': 'Daily FT',
+    'sundaytimes.lk': 'Sunday Times',
+    'island.lk': 'The Island',
+    'lankadeepa.lk': 'Lankadeepa',
+    'hirunews.lk': 'Hiru News',
+    'colombogazette.com': 'Colombo Gazette',
+    'economynext.com': 'EconomyNext',
+  };
   return (Array.isArray(newsItems) ? newsItems : [])
     .filter((item) => item?.link)
-    .map((item) => ({
-      title: item.title || 'Untitled',
-      description: item.description || item.title || '',
-      url: item.link,
-      image: item.image_url,
-      publishedAt: item.pubDate,
-      source: {
-        name: item.source_name || 'NewsData',
+    .map((item) => {
+      let publication = '';
+      let domain = '';
+      if (item.link) {
+        try {
+          domain = new URL(item.link).hostname.replace('www.', '');
+          if (domainToPublication[domain]) {
+            publication = domainToPublication[domain];
+          } else {
+            publication = domain;
+          }
+        } catch { publication = ''; }
+      }
+      if (!publication && item.source_id) publication = item.source_id;
+      else if (!publication && item.source_name) publication = item.source_name;
+      return {
+        title: item.title || 'Untitled',
+        description: item.description || item.title || '',
         url: item.link,
-      },
-    }));
+        image: item.image_url,
+        publishedAt: item.pubDate,
+        source: {
+          name: publication || 'NewsData',
+          url: item.link,
+        },
+      };
+    });
 }
 
 function buildFormEncodedQuery(params) {
@@ -176,8 +257,8 @@ async function fetchFromNewsData(apiKey) {
   return [];
 }
 
-export default async function handler(req, res) {
-  const language = req.query?.lang === 'si' ? 'si' : 'en';
+module.exports = async function (req, res) {
+  const language = req.query && req.query.lang === 'si' ? 'si' : 'en';
   const currentsApiKey = (process.env.CURRENTS_API_KEY || '').trim();
   const gnewsApiKey = (process.env.GNEWS_API_KEY || '').trim();
   const newsDataApiKey = (process.env.NEWSDATA_API_KEY || process.env.NewsData_API_KEY || '').trim();
@@ -237,7 +318,7 @@ export default async function handler(req, res) {
       error: 'Unable to fetch news right now. Please try again later.',
     });
   }
-}
+};
 
 export const config = {
   api: {

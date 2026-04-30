@@ -6,122 +6,16 @@ const LANGUAGE_OPTIONS = [
   { id: 'si', label: 'සිංහල' },
 ]
 
-const GAME_TOTAL_SECONDS = 900
-const STOP_EVERY = 85
-const AUTO_SKIP = 22
-const ARRIVE_AT = 30
-const PASSENGER_WALK_MS = 1200
-const PASSENGER_DEPART_MS = 1000
-
-const BUS_GAME_QUESTIONS = [
-  {
-    id: 'comfort',
-    passenger: 'Kamala',
-    emoji: '👩',
-    question: 'How comfortable was the ride today?',
-    options: ['Very comfortable', 'Quite good', 'It was okay', 'Rather bumpy'],
-  },
-  {
-    id: 'crowding',
-    passenger: 'Rajan',
-    emoji: '👨',
-    question: 'How crowded was the bus?',
-    options: ['Plenty of seats', 'Some seats free', 'Had to stand', 'Very crowded'],
-  },
-  {
-    id: 'time',
-    passenger: 'Priya',
-    emoji: '👩‍💼',
-    question: 'Did the bus arrive on time?',
-    options: ['Right on time', '5–10 min late', '10–30 min late', 'Over 30 min late'],
-  },
-  {
-    id: 'safety',
-    passenger: 'Sunil',
-    emoji: '👴',
-    question: 'Did you feel safe during the journey?',
-    options: ['Very safe', 'Mostly safe', 'A little worried', 'Not safe at all'],
-  },
-  {
-    id: 'driver',
-    passenger: 'Nadeeka',
-    emoji: '👧',
-    question: "How was the driver's behavior?",
-    options: ['Excellent', 'Professional', 'Average', 'Needs improvement'],
-  },
-  {
-    id: 'cleanliness',
-    passenger: 'Thilak',
-    emoji: '🧔',
-    question: 'How clean was the bus interior?',
-    options: ['Spotless!', 'Pretty clean', 'Could be better', 'Quite dirty'],
-  },
-  {
-    id: 'app',
-    passenger: 'Amara',
-    emoji: '👩‍🦱',
-    question: 'How useful is BusSync during your trip?',
-    options: ['Very useful!', 'Quite helpful', 'Somewhat useful', 'Not useful'],
-  },
-  {
-    id: 'value',
-    passenger: 'Chamara',
-    emoji: '🧑‍💻',
-    question: 'Was the bus fare good value for money?',
-    options: ['Excellent value', 'Good value', 'Average', 'Too expensive'],
-  },
-  {
-    id: 'recommend',
-    passenger: 'Dilini',
-    emoji: '👩‍🦰',
-    question: 'Would you recommend this service to others?',
-    options: ['Definitely!', 'Probably yes', 'Not sure', 'Probably not'],
-  },
-  {
-    id: 'overall',
-    passenger: 'Asanka',
-    emoji: '🧑‍🔧',
-    question: 'Overall, how would you rate this trip?',
-    options: ['Excellent', 'Good', 'Average', 'Below average'],
-  },
-]
-
-const GOOGLE_SHEET_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbxyFpIb0eRiUvQNfUCi7Zh-aP7eq4wgkixD6gSic4MhOt38TfFZ9HreLdvmmT1vyc7A/exec'
-const GOOGLE_DEPLOYMENT_ID = 'AKfycbxyFpIb0eRiUvQNfUCi7Zh-aP7eq4wgkixD6gSic4MhOt38TfFZ9HreLdvmmT1vyc7A'
 
 function App() {
-    const [newsOpen, setNewsOpen] = useState(false)
+  const [latestNewsOpen, setLatestNewsOpen] = useState(false)
+  const [featuredNewsOpen, setFeaturedNewsOpen] = useState(false)
   const [language, setLanguage] = useState('en')
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [installEvent, setInstallEvent] = useState(null)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
-
-  // Game state
-  const [gamePhase, setGamePhase] = useState('idle')
-  const [gameRunning, setGameRunning] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(GAME_TOTAL_SECONDS)
-  const [stopsServed, setStopsServed] = useState(0)
-  const [currentQ, setCurrentQ] = useState(null)
-  const [passengerAnim, setPassengerAnim] = useState('hidden')
-  const [autoSkipLeft, setAutoSkipLeft] = useState(0)
-  const [answers, setAnswers] = useState([])
-  const [gameNickname, setGameNickname] = useState('')
-  const [gameRoute, setGameRoute] = useState('')
-
-  const gameRef = useRef({
-    phase: 'idle',
-    timeLeft: GAME_TOTAL_SECONDS,
-    nextStopIn: STOP_EVERY,
-    stopIdx: 0,
-    autoSkipIn: 0,
-    answers: [],
-    currentQ: null,
-  })
-  const walkTimerRef = useRef(null)
-  const departTimerRef = useRef(null)
 
   useEffect(() => {
     const onBeforeInstallPrompt = (event) => {
@@ -172,122 +66,6 @@ function App() {
     }
   }, [language])
 
-  // Single stable interval — starts/stops only when gameRunning flips, never on phase changes
-  useEffect(() => {
-    if (!gameRunning) return undefined
-
-    const g = gameRef.current
-
-    function depart() {
-      g.phase = 'departing'
-      setPassengerAnim('walk-out')
-      clearTimeout(departTimerRef.current)
-      departTimerRef.current = window.setTimeout(() => {
-        setPassengerAnim('hidden')
-        setCurrentQ(null)
-        g.phase = 'driving'
-        g.nextStopIn = STOP_EVERY
-        setGamePhase('driving')
-      }, PASSENGER_DEPART_MS)
-    }
-
-    const tick = window.setInterval(() => {
-      g.timeLeft -= 1
-      setTimeLeft(g.timeLeft)
-
-      if (g.timeLeft <= 0) {
-        g.phase = 'finished'
-        setGamePhase('finished')
-        setGameRunning(false)
-        return
-      }
-
-      if (g.timeLeft <= ARRIVE_AT && g.phase === 'driving') {
-        g.phase = 'arriving'
-        setGamePhase('arriving')
-        return
-      }
-
-      if (g.phase === 'driving') {
-        g.nextStopIn -= 1
-        if (g.nextStopIn <= 0) {
-          const q = BUS_GAME_QUESTIONS[g.stopIdx % BUS_GAME_QUESTIONS.length]
-          g.stopIdx += 1
-          g.currentQ = q
-          g.autoSkipIn = AUTO_SKIP
-          g.phase = 'stopped'
-          setCurrentQ(q)
-          setStopsServed((c) => c + 1)
-          setPassengerAnim('walk-in')
-          setAutoSkipLeft(AUTO_SKIP)
-          setGamePhase('stopped')
-          clearTimeout(walkTimerRef.current)
-          walkTimerRef.current = window.setTimeout(
-            () => setPassengerAnim('at-stop'),
-            PASSENGER_WALK_MS,
-          )
-        }
-      } else if (g.phase === 'stopped') {
-        g.autoSkipIn -= 1
-        setAutoSkipLeft(g.autoSkipIn)
-        if (g.autoSkipIn <= 0) {
-          const q = g.currentQ
-          if (q) {
-            g.answers = [
-              ...g.answers,
-              {
-                questionId: q.id,
-                question: q.question,
-                passenger: q.passenger,
-                answer: null,
-                skipped: true,
-                timestamp: new Date().toISOString(),
-              },
-            ]
-            setAnswers([...g.answers])
-          }
-          depart()
-        }
-      }
-    }, 1000)
-
-    return () => {
-      window.clearInterval(tick)
-      clearTimeout(walkTimerRef.current)
-      clearTimeout(departTimerRef.current)
-    }
-  }, [gameRunning])
-
-  // Submit answers to Google Sheets when game finishes
-  useEffect(() => {
-    if (gamePhase !== 'finished') return
-
-    const g = gameRef.current
-    const allAnswers = g.answers
-    if (allAnswers.length === 0) return
-
-    const answered = allAnswers.filter((a) => !a.skipped)
-    const flatAnswers = Object.fromEntries(answered.map((a) => [a.questionId, a.answer]))
-
-    const postBody = new URLSearchParams({
-      deploymentId: GOOGLE_DEPLOYMENT_ID,
-      timestamp: new Date().toISOString(),
-      nickname: gameNickname || '',
-      route: gameRoute || '',
-      gameMode: 'bus-route-stop',
-      totalStops: String(allAnswers.length),
-      answeredStops: String(answered.length),
-      ...Object.fromEntries(Object.entries(flatAnswers).map(([k, v]) => [k, String(v)])),
-      payload: JSON.stringify(allAnswers),
-    })
-
-    fetch(GOOGLE_SHEET_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: postBody.toString(),
-    }).catch(() => {})
-  }, [gamePhase, gameNickname, gameRoute])
 
   async function installApp() {
     if (!installEvent) {
@@ -299,59 +77,6 @@ function App() {
     await installEvent.userChoice.catch(() => {})
     setInstallEvent(null)
     setShowInstallPrompt(false)
-  }
-
-  function formatBusTime(seconds) {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0')
-    const s = (seconds % 60).toString().padStart(2, '0')
-    return `${m}:${s}`
-  }
-
-  function startBusGame() {
-    const g = gameRef.current
-    g.phase = 'driving'
-    g.timeLeft = GAME_TOTAL_SECONDS
-    g.nextStopIn = STOP_EVERY
-    g.stopIdx = 0
-    g.autoSkipIn = 0
-    g.answers = []
-    g.currentQ = null
-    setGamePhase('driving')
-    setTimeLeft(GAME_TOTAL_SECONDS)
-    setStopsServed(0)
-    setAnswers([])
-    setCurrentQ(null)
-    setPassengerAnim('hidden')
-    setAutoSkipLeft(0)
-    setGameRunning(true)
-  }
-
-  function handleBusAnswer(answer) {
-    const g = gameRef.current
-    if (g.phase !== 'stopped') return
-
-    const q = g.currentQ
-    g.answers = [
-      ...g.answers,
-      {
-        questionId: q.id,
-        question: q.question,
-        passenger: q.passenger,
-        answer,
-        timestamp: new Date().toISOString(),
-      },
-    ]
-    setAnswers([...g.answers])
-    g.phase = 'departing'
-    setPassengerAnim('walk-out')
-    clearTimeout(departTimerRef.current)
-    departTimerRef.current = window.setTimeout(() => {
-      setPassengerAnim('hidden')
-      setCurrentQ(null)
-      g.phase = 'driving'
-      g.nextStopIn = STOP_EVERY
-      setGamePhase('driving')
-    }, PASSENGER_DEPART_MS)
   }
 
   return (
@@ -391,216 +116,153 @@ function App() {
           <p className="news-note">No headlines available right now.</p>
         )}
 
+
+        {/* Latest News Card */}
         {!loading && !error && articles.length > 0 && (
-          <div className="latest-news-card" style={{cursor: 'pointer'}} onClick={() => setNewsOpen((open) => !open)}>
-            <h3 style={{marginTop: 0, marginBottom: newsOpen ? 16 : 0, userSelect: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-              Latest News
-              <span style={{fontSize: 18, marginLeft: 8}}>{newsOpen ? '▲' : '▼'}</span>
+          <div className="latest-news-card" style={{cursor: 'pointer'}} onClick={() => {
+            setLatestNewsOpen((open) => !open);
+            setFeaturedNewsOpen(false);
+          }}>
+            <h3 style={{marginTop: 0, marginBottom: latestNewsOpen ? 16 : 0, userSelect: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              {language === 'si' ? 'නවතම පුවත්' : 'Latest News'}
+              <span style={{fontSize: 18, marginLeft: 8}}>{latestNewsOpen ? '▲' : '▼'}</span>
             </h3>
-            {newsOpen && (
+            {latestNewsOpen && (
               <ul className="news-list" style={{background: 'transparent', boxShadow: 'none', border: 'none', margin: 0, padding: 0}} onClick={e => e.stopPropagation()}>
-                {articles.map((article) => (
-                  <li key={article.url} style={{background: 'transparent', border: 'none', boxShadow: 'none', padding: 0, marginBottom: 18}}>
-                    <a href={article.url} target="_blank" rel="noreferrer">
+                {articles.map((article) => {
+                  // Format date as yyyy-mm-dd or fallback
+                  let pubDate = '';
+                  if (article.publishedAt) {
+                    const d = new Date(article.publishedAt);
+                    if (!isNaN(d)) {
+                      pubDate = d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+                    }
+                  }
+                  return (
+                    <li key={article.url} style={{background: 'transparent', border: 'none', boxShadow: 'none', padding: 0, marginBottom: 18}}>
                       <h4 style={{margin: '0 0 8px', color: '#fff'}}>{article.title}</h4>
                       <p style={{color: '#e0e6ed'}}>{article.description || 'Tap to read full article.'}</p>
-                      <span style={{color: '#b8e0ff', fontWeight: 600}}>Read story</span>
-                    </a>
-                  </li>
-                ))}
+                      <div style={{color: '#b8e0ff', fontWeight: 600, fontSize: '0.97em', marginTop: 4}}>
+                        {article.source?.name ? article.source.name : 'Unknown Source'}
+                        {pubDate && (
+                          <span style={{color: '#e0e6ed', fontWeight: 400, marginLeft: 8}}>
+                            | {pubDate}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
         )}
-      </section>
 
-      {/* <section className="bus-game-section" aria-label="Bus route feedback game">
-        <div className="section-head">
-          <h2>Travel Feedback Quest</h2>
-          <p>Drive the Colombo – Anuradhapura route. Stop at each bus stop and collect one passenger feedback.</p>
-        </div>
-
-        {(gamePhase === 'idle' || gamePhase === 'finished') && (
-          <div className="bus-game-overlay">
-            {gamePhase === 'idle' ? (
-              <>
-                <div className="overlay-bus-icon">🚌</div>
-                <h3>Colombo – Anuradhapura Route</h3>
-                <p>
-                  The bus stops automatically at each stop. Ask passengers one question and collect their feedback. The route lasts 15 minutes.
-                </p>
-                <div className="start-fields">
-                  <input
-                    value={gameNickname}
-                    onChange={(e) => setGameNickname(e.target.value)}
-                    placeholder="Your nickname (optional)"
-                    className="start-input"
-                  />
-                  <input
-                    value={gameRoute}
-                    onChange={(e) => setGameRoute(e.target.value)}
-                    placeholder="Bus route / number (e.g. 15)"
-                    className="start-input"
-                  />
-                </div>
-                <button type="button" className="install-btn" onClick={startBusGame}>
-                  Start Route
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="overlay-bus-icon">🏁</div>
-                <h3>Final Station Reached!</h3>
-                <p>
-                  You visited {stopsServed} stops and collected{' '}
-                  {answers.filter((a) => !a.skipped).length} passenger responses.
-                </p>
-                {answers.filter((a) => !a.skipped).length > 0 && (
-                  <ul className="bus-game-summary">
-                    {answers
-                      .filter((a) => !a.skipped)
-                      .map((a) => (
-                        <li key={`${a.questionId}-${a.timestamp}`}>
-                          <strong>{a.passenger}</strong>: {a.answer}
-                        </li>
-                      ))}
-                  </ul>
-                )}
-                <p className="news-note">Responses sent to your Google Sheet.</p>
-                <button type="button" className="install-btn" onClick={startBusGame}>
-                  New Route
-                </button>
-              </>
+        {/* Featured News Card (real categories) */}
+        {!loading && !error && articles.length > 0 && (
+          <div className="featured-news-card" style={{cursor: 'pointer'}} onClick={() => {
+            setFeaturedNewsOpen((open) => !open);
+            setLatestNewsOpen(false);
+          }}>
+            <h3 style={{marginTop: 0, marginBottom: featuredNewsOpen ? 16 : 0, userSelect: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              {language === 'si' ? 'විශේෂ පුවත්' : 'Featured News (By Category)'}
+              <span style={{fontSize: 18, marginLeft: 8}}>{featuredNewsOpen ? '▲' : '▼'}</span>
+            </h3>
+            {featuredNewsOpen && (
+              <div style={{background: 'transparent', boxShadow: 'none', border: 'none', margin: 0, padding: 0}} onClick={e => e.stopPropagation()}>
+                {
+                  (() => {
+                    // Define category keywords
+                    const categoryMap = language === 'si' ? [
+                      { name: 'ක්‍රීඩා', keywords: ['ක්‍රීඩා', 'ක්‍රිකට්', 'පන්දුව', 'පාපන්දු', 'තරඟය', 'ඔලිම්පික්', 'ක්‍රීඩකයා'] },
+                      { name: 'ව්‍යාපාර', keywords: ['ව්‍යාපාර', 'වෙළඳපොළ', 'කොටස්', 'මුදල්', 'ආර්ථිකය', 'වෙළඳාම', 'සමාගම', 'කොටස්', 'ආයෝජනය'] },
+                      { name: 'කෘෂිකර්මය', keywords: ['කෘෂිකර්මය', 'ගොවිතැන', 'ගොවියා', 'බෝග', 'අස්වනු', 'වගා', 'වෙළඳපොළ', 'පැදුරු', 'තේ', 'රබර්'] },
+                      { name: 'දේශපාලන', keywords: ['දේශපාලන', 'රජය', 'අමාත්‍ය', 'පාර්ලිමේන්තුව', 'මැතිවරණය', 'නීති', 'ජනාධිපති', 'අග්‍රාමාත්‍ය'] },
+                      { name: 'සෞඛ්‍ය', keywords: ['සෞඛ්‍ය', 'රෝහල', 'වෛද්‍ය', 'කොවිඩ්', 'රෝගය', 'ඖෂධ', 'ටිකා', 'වෛද්‍ය'] },
+                      { name: 'අධ්‍යාපනය', keywords: ['අධ්‍යාපනය', 'පාසල', 'විශ්වවිද්‍යාලය', 'ශිෂ්‍යයා', 'පරීක්ෂණය', 'ගුරු', 'උපාධිය'] },
+                      { name: 'තාක්ෂණය', keywords: ['තාක්ෂණය', 'සොෆ්ට්වෙයාර්', 'හාර්ඩ්වෙයාර්', 'අන්තර්ජාලය', 'ඉන්ටර්නෙට්', 'රොබෝ', 'පරිගණකය', 'යෙදුම'] },
+                      { name: 'පරිසරය', keywords: ['පරිසරය', 'කාලගුණය', 'වර්ෂාව', 'පිටාර', 'වනාන්තරය', 'දූෂණය', 'වනජීවී'] },
+                      { name: 'අපරාධ', keywords: ['අපරාධ', 'පොලිසිය', 'අත්අඩංගුව', 'අධිකරණය', 'ඝාතනය', 'මංකොල්ලය', 'වංචාව', 'පරීක්ෂණය'] },
+                      { name: 'වෙනත්', keywords: [] }
+                    ] : [
+                      { name: 'Sports', keywords: ['sport', 'cricket', 'football', 'match', 'tournament', 'olympic', 'athlete'] },
+                      { name: 'Business', keywords: ['business', 'market', 'stock', 'finance', 'economy', 'trade', 'company', 'shares', 'investment'] },
+                      { name: 'Agriculture', keywords: ['agriculture', 'farming', 'farmer', 'crop', 'harvest', 'plantation', 'paddy', 'tea', 'rubber'] },
+                      { name: 'Politics', keywords: ['politic', 'government', 'minister', 'parliament', 'election', 'policy', 'president', 'prime minister'] },
+                      { name: 'Health', keywords: ['health', 'hospital', 'doctor', 'covid', 'disease', 'medicine', 'vaccine', 'medical'] },
+                      { name: 'Education', keywords: ['education', 'school', 'university', 'student', 'exam', 'teacher', 'degree'] },
+                      { name: 'Technology', keywords: ['tech', 'technology', 'software', 'hardware', 'internet', 'ai', 'robot', 'computer', 'app'] },
+                      { name: 'Environment', keywords: ['environment', 'climate', 'weather', 'rain', 'flood', 'drought', 'wildlife', 'forest', 'pollution'] },
+                      { name: 'Crime', keywords: ['crime', 'police', 'arrest', 'court', 'murder', 'theft', 'fraud', 'investigation'] },
+                      { name: 'Other', keywords: [] }
+                    ];
+                    // Assign articles to categories
+                    const categorized = {};
+                    articles.forEach(article => {
+                      const text = `${article.title || ''} ${article.description || ''}`.toLowerCase();
+                      let found = false;
+                      for (const cat of categoryMap) {
+                        // Skip 'Other' and 'වෙනත්' when assigning
+                        if (cat.name === 'Other' || cat.name === 'වෙනත්') continue;
+                        if (cat.keywords.some(kw => text.includes(kw))) {
+                          if (!categorized[cat.name]) categorized[cat.name] = [];
+                          categorized[cat.name].push(article);
+                          found = true;
+                          break;
+                        }
+                      }
+                      // Only add to 'Other' or 'වෙනත්' if not found, but do not display later
+                      if (!found) {
+                        const otherKey = language === 'si' ? 'වෙනත්' : 'Other';
+                        if (!categorized[otherKey]) categorized[otherKey] = [];
+                        categorized[otherKey].push(article);
+                      }
+                    });
+                    // Remove 'Other'/'වෙනත්' category from display
+                    const otherKey = language === 'si' ? 'වෙනත්' : 'Other';
+                    const entries = Object.entries(categorized).filter(([cat]) => cat !== otherKey);
+                    entries.sort(([a], [b]) => a.localeCompare(b));
+                    return entries.map(([category, catArticles]) => (
+                      <div key={category} style={{marginBottom: 18}}>
+                        <h4 style={{margin: '0 0 8px', color: '#fff', textTransform: 'capitalize'}}>{category}</h4>
+                        <div className="category-cards-row" style={{display: 'flex', flexWrap: 'wrap', gap: '12px', margin: 0, padding: 0}}>
+                          {catArticles.map((article) => {
+                            let pubDate = '';
+                            if (article.publishedAt) {
+                              const d = new Date(article.publishedAt);
+                              if (!isNaN(d)) {
+                                pubDate = d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+                              }
+                            }
+                            return (
+                              <div key={article.url} className="category-news-card" style={{background: '#fff', color: '#222', borderRadius: 10, boxShadow: '0 2px 8px rgba(44,62,80,0.10)', padding: 12, minWidth: 220, maxWidth: 260, flex: '1 1 220px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+                                <div style={{fontWeight: 700, color: '#e74c3c', marginBottom: 4, fontSize: '0.98em'}}>{category}</div>
+                                <div style={{fontWeight: 700, marginBottom: 4}}>{article.title}</div>
+                                <div style={{color: '#555', fontSize: '0.97em', marginBottom: 6}}>{article.description || 'Tap to read full article.'}</div>
+                                <div style={{color: '#888', fontSize: '0.92em', marginTop: 'auto'}}>
+                                  {pubDate && (
+                                    <span style={{marginRight: 8}}>{pubDate}</span>
+                                  )}
+                                  {article.source?.name && (
+                                    <span>{article.source.name}</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ));
+                  })()
+                }
+              </div>
             )}
           </div>
         )}
 
-        {gamePhase !== 'idle' && gamePhase !== 'finished' && (
-          <>
-            <div className="bus-game-hud">
-              <span className={`hud-timer${timeLeft <= 60 ? ' hud-warn' : ''}`}>
-                🕐 {formatBusTime(timeLeft)}
-              </span>
-              <span className="hud-stops">🚏 Stops: {stopsServed}</span>
-              <span className="hud-route">Colombo → Anuradhapura</span>
-            </div>
-
-            <div className="bus-game-scene">
-              <div className="bg-sky" />
-              <div className={`bg-scenery${gamePhase === 'stopped' ? ' scene-paused' : ''}`}>
-                <span>🌳</span>
-                <span>🏠</span>
-                <span>🌳</span>
-                <span>🌳</span>
-                <span>🏢</span>
-                <span>🌿</span>
-                <span>🏠</span>
-                <span>🌳</span>
-                <span>🌴</span>
-                <span>🏢</span>
-                <span>🌳</span>
-                <span>🏠</span>
-                <span>🌳</span>
-                <span>🌳</span>
-                <span>🌴</span>
-                <span>🌳</span>
-                <span>🏠</span>
-                <span>🌳</span>
-                <span>🌳</span>
-                <span>🏢</span>
-                <span>🌿</span>
-                <span>🏠</span>
-                <span>🌳</span>
-                <span>🌴</span>
-                <span>🏢</span>
-                <span>🌳</span>
-                <span>🏠</span>
-                <span>🌳</span>
-                <span>🌳</span>
-                <span>🌴</span>
-              </div>
-
-              <div className="bg-road">
-                <div
-                  className={`road-center-line${gamePhase === 'stopped' ? ' scene-paused' : ''}`}
-                />
-              </div>
-
-              {gamePhase === 'stopped' && (
-                <div className="bus-stop-marker">
-                  <span>🚏</span>
-                  <span className="stop-tag">BUS STOP</span>
-                </div>
-              )}
-
-              {gamePhase === 'arriving' && (
-                <div className="bus-station-marker">
-                  <span>🏛️</span>
-                  <span className="stop-tag">FINAL STATION</span>
-                </div>
-              )}
-
-              <div
-                className={`game-bus-emoji ${
-                  gamePhase === 'stopped'
-                    ? 'bus-halted'
-                    : gamePhase === 'arriving'
-                      ? 'bus-arriving'
-                      : 'bus-moving'
-                }`}
-              >
-                🚌
-              </div>
-
-              <div className={`game-passenger-figure anim-${passengerAnim}`}>
-                {currentQ && (
-                  <>
-                    <div className="pax-emoji">{currentQ.emoji}</div>
-                    <div className="pax-name">{currentQ.passenger}</div>
-                  </>
-                )}
-              </div>
-
-              {passengerAnim === 'at-stop' && currentQ && (
-                <div className="driver-speech">
-                  <div className="driver-bubble">
-                    <span className="driver-tag">🚌 Driver asks:</span>
-                    <p>{currentQ.question}</p>
-                    <span className="auto-hint">Auto-skip in {autoSkipLeft}s</span>
-                  </div>
-                </div>
-              )}
-
-              {gamePhase === 'arriving' && (
-                <p className="arriving-msg">🏁 Approaching final station…</p>
-              )}
-            </div>
-
-            {passengerAnim === 'at-stop' && currentQ && (
-              <div className="bus-answer-grid">
-                {currentQ.options.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className="bus-answer-btn"
-                    onClick={() => handleBusAnswer(option)}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {gamePhase === 'driving' && (
-              <p className="bus-status-msg">🚌 Driving to next stop…</p>
-            )}
-          </>
-        )}
+        {/* Zones Card removed */}
       </section>
 
-      <footer className="footer">
-        <p>BusSync PWA – Travel Feedback Quest</p>
-      </footer> */}
 
       {showInstallPrompt && (
         <div className="prompt-layer" role="presentation">

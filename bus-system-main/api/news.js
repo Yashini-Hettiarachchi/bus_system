@@ -2,7 +2,7 @@ const CURRENTS_API_URL = 'https://api.currentsapi.services/v1/search'
 const GNEWS_API_URL = 'https://gnews.io/api/v4/search'
 const NEWSDATA_API_URL = 'https://newsdata.io/api/1/latest'
 const CACHE_TTL_MS = 10 * 60 * 1000
-const RESULT_LIMIT = 6
+const RESULT_LIMIT = 20
 const newsCache = new Map()
 
 const LOCAL_DOMAINS = [
