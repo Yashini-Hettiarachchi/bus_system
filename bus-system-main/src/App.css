@@ -1,3 +1,35 @@
+.tab-row {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.tab-btn {
+  border: none;
+  border-radius: 999px;
+  background: #eaf3fa;
+  color: #35546f;
+  padding: 8px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.15s, color 0.15s;
+}
+.tab-btn.active {
+  background: #0d6fb4;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(32, 61, 87, 0.18);
+}
+
+.movie-section {
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 24px 0 32px 0;
+}
+.movie-head {
+  margin-bottom: 18px;
+  text-align: center;
+}
 .category-cards-row {
   display: flex;
   flex-wrap: wrap;

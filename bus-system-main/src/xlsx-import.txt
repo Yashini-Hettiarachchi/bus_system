@@ -1,0 +1,2 @@
+// Add this import at the top of your App.jsx file
+import * as XLSX from 'xlsx';
