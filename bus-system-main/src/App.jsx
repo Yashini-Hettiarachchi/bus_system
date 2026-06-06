@@ -13,12 +13,11 @@ const LANGUAGE_OPTIONS = [
   { id: "si", label: "සිංහල" },
 ];
 
-// Main content tabs: News feed, Movie listing, Feedback, and Category
+// Main content tabs: News feed and Movie listing
 const TAB_OPTIONS = [
   { id: "news", label: "News" },
   { id: "movie", label: "Movie" },
-  { id: "feedback", label: "Feedback" }, // Renamed category tab to Feedback
-  { id: "category", label: "Category" },
+  { id: "category", label: "Category" }, // Added category tab
 ];
 
 // 10 bilingual feedback questions about the bus entertainment system.
@@ -1489,11 +1488,107 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
             </div>
           )}
           <div className="news-head">
-            <h2>{tab === "category" ? (language === "si" ? "ප්‍රතිපෝෂණ" : "Feedback") : "Updated on each language change"}</h2>
+            <h2>{tab === "category" ? "Category News" : "Updated on each language change"}</h2>
             {/* <p>Updated on each language change</p> */}
           </div>
 
-          
+          {tab === "category" && (
+            <div
+              style={{
+                border: "1px solid #d6e0eb",
+                borderRadius: 16,
+                background: "#ffffff",
+                padding: 18,
+              }}
+            >
+              <h3 style={{ margin: "0 0 6px", color: "#12324a" }}>{categoryTabCopy.title}</h3>
+              <p style={{ margin: "0 0 16px", color: "#4e6377" }}>{categoryTabCopy.subtitle}</p>
+
+              {categoryPreferencePercentages.length === 0 ? (
+                <p className="news-note">{categoryTabCopy.noData}</p>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 18,
+                    gridTemplateColumns: "minmax(220px, 280px) 1fr",
+                    alignItems: "start",
+                  }}
+                >
+                  <svg width="260" height="260" viewBox="0 0 260 260" aria-label="Category preference pie chart">
+                    <g transform="translate(130,130)">
+                      {(() => {
+                        const radius = 82;
+                        const circumference = 2 * Math.PI * radius;
+                        let offsetPercent = 0;
+                        return categoryPreferencePercentages.map((item) => {
+                          const dash = (item.percentage / 100) * circumference;
+                          const segment = (
+                            <circle
+                              key={item.category}
+                              r={radius}
+                              cx="0"
+                              cy="0"
+                              fill="transparent"
+                              stroke={item.color}
+                              strokeWidth="30"
+                              strokeDasharray={`${dash} ${Math.max(circumference - dash, 0)}`}
+                              strokeDashoffset={-((offsetPercent / 100) * circumference)}
+                              transform="rotate(-90)"
+                            />
+                          );
+                          offsetPercent += item.percentage;
+                          return segment;
+                        });
+                      })()}
+                      <circle r="52" cx="0" cy="0" fill="#ffffff" />
+                      <text x="0" y="-4" textAnchor="middle" fontSize="12" fill="#4e6377">Total</text>
+                      <text x="0" y="15" textAnchor="middle" fontSize="16" fontWeight="700" fill="#12324a">
+                        {Math.round(categoryPreferencePercentages.reduce((s, i) => s + i.percentage, 0))}%
+                      </text>
+                    </g>
+                  </svg>
+
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {categoryPreferencePercentages.map((item) => (
+                      <div
+                        key={item.category}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          padding: "8px 12px",
+                          borderRadius: 10,
+                          background: "#f8fbff",
+                          border: "1px solid #e2e9f1",
+                        }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                          <span
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              background: item.color,
+                              display: "inline-block",
+                            }}
+                          />
+                          <span style={{ color: "#12324a", fontWeight: 600 }}>{item.category}</span>
+                          <span style={{ fontSize: 13, color: "#4e6377", marginLeft: 8 }}>
+                            ({item.score} {language === "si" ? "මනාප" : "votes"})
+                          </span>
+                        </span>
+                        <span style={{ color: "#0d6fb4", fontWeight: 700, minWidth: 45, textAlign: "right" }}>
+                          {item.percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {loading && <p className="news-note">Loading headlines...</p>}
           {error && !loading && <p className="news-error">{error}</p>}
