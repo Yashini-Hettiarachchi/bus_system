@@ -707,11 +707,7 @@ function App() {
     backToBus: language === "si" ? "බස් එකට ආපසු" : "Back to bus",
     close: language === "si" ? "වසන්න" : "Close",
   };
-  const quickCategoryBusSlots = featuredCategoryEntries
-    .slice(0, 10)
-    .map(([category, categoryArticles]) => ({ category, categoryArticles }));
-
-  const getQuickCategorySlot = (index) => quickCategoryBusSlots[index] || null;
+// quickCategoryBusSlots will be defined later to align with ALL_CATEGORIES
 
   const formatQuickCategoryLabel = (category) => {
     if (!category) {
@@ -754,9 +750,19 @@ function App() {
     "#e11d48",
   ];
 
-  const categoryPreferenceChartData = featuredCategoryEntries.map(([category], index) => {
+  // Define all categories that should appear in the chart
+  const ALL_CATEGORIES = ["Crime", "Health", "Sports", "Techno"]; 
+
+  // Build quickCategoryBusSlots using visibleFeaturedCategoryEntries to match Category News
+  const quickCategoryBusSlots = visibleFeaturedCategoryEntries.map(([category, categoryArticles]) => ({ category, categoryArticles }));
+
+  const getQuickCategorySlot = (index) => quickCategoryBusSlots[index] || null;
+
+  // Build chart data for every category, using stored preferences if available.
+  const categoryPreferenceChartData = ALL_CATEGORIES.map((category, index) => {
     const preference = categoryInterest[category];
-    const score = preference === true ? 1 : preference === false ? 0 : 0.5;
+    // Score is 1 for interested (true), 0 otherwise (including false, null, undefined)
+    const score = preference === true ? 1 : 0;
     return {
       category,
       score,
@@ -764,17 +770,16 @@ function App() {
     };
   });
 
+  // Total score across all categories (may be 0 if no interests selected)
   const categoryPreferenceTotalScore = categoryPreferenceChartData.reduce(
     (sum, item) => sum + item.score,
     0,
   );
 
+  // Convert scores to percentages; if totalScore is 0, all percentages become 0
   const categoryPreferencePercentages = categoryPreferenceChartData.map((item) => ({
     ...item,
-    percentage:
-      categoryPreferenceTotalScore > 0
-        ? (item.score / categoryPreferenceTotalScore) * 100
-        : 0,
+    percentage: categoryPreferenceTotalScore > 0 ? (item.score / categoryPreferenceTotalScore) * 100 : 0,
   }));
 
   const categoryTabCopy = {
@@ -1438,101 +1443,37 @@ function App() {
                   </svg>
 
                   <div style={{ display: "grid", gap: 10 }}>
-                    {categoryPreferencePercentages.map((item) => {
-                      const currentVal = categoryInterest[item.category];
-                      return (
-                        <div
-                          key={item.category}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 10,
-                            padding: "8px 12px",
-                            borderRadius: 10,
-                            background: "#f8fbff",
-                            border: "1px solid #e2e9f1",
-                          }}
-                        >
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                            <span
-                              style={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: "50%",
-                                background: item.color,
-                                display: "inline-block",
-                              }}
-                            />
-                            <span style={{ color: "#12324a", fontWeight: 600 }}>{item.category}</span>
-                          </span>
-                          
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            {/* Toggle controls */}
-                            <div style={{ display: "flex", background: "#edf2f7", borderRadius: 8, padding: 2, gap: 2 }}>
-                              <button
-                                type="button"
-                                style={{
-                                  padding: "2px 8px",
-                                  fontSize: "0.78rem",
-                                  border: "none",
-                                  borderRadius: 6,
-                                  cursor: "pointer",
-                                  background: currentVal === true ? "#4caf50" : "transparent",
-                                  color: currentVal === true ? "#ffffff" : "#4a5568",
-                                  fontWeight: currentVal === true ? "bold" : "normal",
-                                  transition: "all 0.2s"
-                                }}
-                                onClick={() => saveCategoryInterest(item.category, true)}
-                                title="Show / Interested"
-                              >
-                                {language === "si" ? "කැමතියි" : "Show"}
-                              </button>
-                              <button
-                                type="button"
-                                style={{
-                                  padding: "2px 8px",
-                                  fontSize: "0.78rem",
-                                  border: "none",
-                                  borderRadius: 6,
-                                  cursor: "pointer",
-                                  background: currentVal === undefined || currentVal === null ? "#a0aec0" : "transparent",
-                                  color: currentVal === undefined || currentVal === null ? "#ffffff" : "#4a5568",
-                                  fontWeight: currentVal === undefined || currentVal === null ? "bold" : "normal",
-                                  transition: "all 0.2s"
-                                }}
-                                onClick={() => saveCategoryInterest(item.category, null)}
-                                title="Neutral"
-                              >
-                                {language === "si" ? "මැද" : "Neutral"}
-                              </button>
-                              <button
-                                type="button"
-                                style={{
-                                  padding: "2px 8px",
-                                  fontSize: "0.78rem",
-                                  border: "none",
-                                  borderRadius: 6,
-                                  cursor: "pointer",
-                                  background: currentVal === false ? "#f44336" : "transparent",
-                                  color: currentVal === false ? "#ffffff" : "#4a5568",
-                                  fontWeight: currentVal === false ? "bold" : "normal",
-                                  transition: "all 0.2s"
-                                }}
-                                onClick={() => saveCategoryInterest(item.category, false)}
-                                title="Hide / Not Interested"
-                              >
-                                {language === "si" ? "මඟහරින්න" : "Hide"}
-                              </button>
-                            </div>
-                            
-                            <span style={{ color: "#0d6fb4", fontWeight: 700, minWidth: 45, textAlign: "right" }}>
-                              {item.percentage.toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {categoryPreferencePercentages.map((item) => (
+                      <div
+                        key={item.category}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          padding: "8px 12px",
+                          borderRadius: 10,
+                          background: "#f8fbff",
+                          border: "1px solid #e2e9f1",
+                        }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                          <span
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              background: item.color,
+                              display: "inline-block",
+                            }}
+                          />
+                          <span style={{ color: "#12324a", fontWeight: 600 }}>{item.category}</span>
+                        </span>
+                        <span style={{ color: "#0d6fb4", fontWeight: 700, minWidth: 45, textAlign: "right" }}>
+                          {item.percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
