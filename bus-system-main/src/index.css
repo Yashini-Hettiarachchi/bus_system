@@ -1,37 +1,50 @@
+/* Global CSS reset, typography tokens, and base layout for BusSync.
+   Imported once in main.jsx — applies to the entire app. */
+
+/* ─── Fonts ───────────────────────────────────────────────────────────────── */
+/* Archivo: body text — neutral, modern, readable at small sizes on a bus screen */
+/* Space Grotesk: headings — slightly quirky, good contrast against Archivo */
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
+/* ─── Design tokens (CSS custom properties) ──────────────────────────────── */
 :root {
-  --text: #334a60;
-  --text-h: #11263a;
-  --bg: #fcfdff;
-  --border: #dde5ee;
+  --text: #334a60;    /* Default body text colour — dark steel blue */
+  --text-h: #11263a;  /* Heading text — deeper navy for contrast */
+  --bg: #fcfdff;      /* Page background — near-white with a cool tint */
+  --border: #dde5ee;  /* Dividers and card borders */
 
   font-family: 'Archivo', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--text);
   background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;                /* Prevent browser from synthesising bold/italic */
+  text-rendering: optimizeLegibility;  /* Improve kerning on large headings */
+  -webkit-font-smoothing: antialiased; /* Crisp fonts on macOS / iOS */
+  -moz-osx-font-smoothing: grayscale;  /* Crisp fonts on Firefox/macOS */
 }
 
+/* ─── Box model reset ─────────────────────────────────────────────────────── */
+/* Include padding and border in element dimensions — standard modern reset */
 * {
   box-sizing: border-box;
 }
 
+/* ─── Body & root layout ──────────────────────────────────────────────────── */
 body {
-  margin: 0;
-  min-height: 100vh;
+  margin: 0;         /* Remove default browser margin */
+  min-height: 100vh; /* Ensure body fills the full viewport height */
 }
 
+/* The React root div is centred and capped at 1140 px for wide screens */
 #root {
   max-width: 1140px;
-  margin: 0 auto;
+  margin: 0 auto;    /* Horizontal centering */
   min-height: 100vh;
 }
 
+/* ─── Heading typography ──────────────────────────────────────────────────── */
+/* Use Space Grotesk for all headings to distinguish them from body copy */
 h1,
 h2,
 h3,

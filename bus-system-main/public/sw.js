@@ -1,36 +1,17 @@
-const CACHE_NAME = 'bus-sync-v1'
-const ASSETS = ['/', '/index.html', '/manifest.webmanifest']
+// Service Worker for BusSync PWA.
+// This SW is intentionally minimal — it does not cache any assets.
+// Its sole job is to keep the PWA installable on mobile devices.
 
+// "install" fires when a new SW version is detected by the browser.
+// skipWaiting() activates the new SW immediately instead of waiting
+// for all old tabs to be closed first.
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)))
   self.skipWaiting()
 })
 
+// "activate" fires after the SW takes over.
+// clients.claim() makes the new SW take control of every open page
+// immediately, so passengers see the latest app version without a refresh.
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
-  )
-  self.clients.claim()
-})
-
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') {
-    return
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const copy = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
-        return response
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
-  )
+  event.waitUntil(self.clients.claim())
 })

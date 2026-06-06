@@ -1,6 +1,18 @@
-// Vercel Serverless Function for /api/news
+/**
+ * api/news/index.js — CommonJS Vercel serverless handler for /api/news
+ *
+ * This file is the CJS counterpart of api/news.js. Vercel supports either
+ * module format; the `index.js` form is used when the route resolves via
+ * the /api/news/ directory convention.
+ *
+ * Provider fallback chain: Currents API → GNews → NewsData.io
+ * Results are scored for Sri Lanka relevance, deduplicated, and cached
+ * in-memory for 10 minutes. Bilingual translation (EN ↔ SI) is applied
+ * when the client requests `lang=si`.
+ */
 const fetch = require('node-fetch');
 
+/* ─── Constants ──────────────────────────────────────────────────────────── */
 const CURRENTS_API_URL = 'https://api.currentsapi.services/v1/search';
 const GNEWS_API_URL = 'https://gnews.io/api/v4/search';
 const NEWSDATA_API_URL = 'https://newsdata.io/api/1/latest';
@@ -35,6 +47,7 @@ const LOCAL_SOURCE_KEYWORDS = [
 
 const SRILANKA_KEYWORDS = ['sri lanka', 'sri lankan', 'colombo', 'kandy', 'jaffna', 'galle'];
 
+/* ─── Utility helpers ────────────────────────────────────────────────────── */
 function safeDomainFromUrl(url) {
   if (!url) return '';
   try {
@@ -48,6 +61,7 @@ function textIncludesAny(haystack, needles) {
   return needles.some((needle) => haystack.includes(needle));
 }
 
+/* ─── Sri Lanka relevance scoring ───────────────────────────────────────── */
 function localRelevanceScore(article) {
   const domain = safeDomainFromUrl(article.url);
   const sourceText = (article.source?.name || '').toLowerCase();
@@ -74,6 +88,7 @@ function prioritizeLocalArticles(articles, limit = RESULT_LIMIT) {
     .slice(0, limit);
 }
 
+/* ─── Article normalisers — harmonise each provider's shape ─────────────── */
 function normalizeCurrentsArticles(newsItems) {
   // Map known domains to publication names
   const domainToPublication = {
@@ -189,6 +204,7 @@ function normalizeNewsDataArticles(newsItems) {
     });
 }
 
+/* ─── Query builder ──────────────────────────────────────────────────────── */
 function buildFormEncodedQuery(params) {
   return Object.entries(params)
     .map(([key, value]) => {
@@ -198,6 +214,7 @@ function buildFormEncodedQuery(params) {
     .join('&');
 }
 
+/* ─── Provider fetch functions ───────────────────────────────────────────── */
 async function fetchFromCurrents(apiKey) {
   const params = {
     keywords: 'Sri Lanka OR Colombo OR Sri Lankan',
@@ -257,6 +274,7 @@ async function fetchFromNewsData(apiKey) {
   return [];
 }
 
+/* ─── Serverless handler (exported) ─────────────────────────────────────── */
 module.exports = async function (req, res) {
   const language = req.query && req.query.lang === 'si' ? 'si' : 'en';
   const currentsApiKey = (process.env.CURRENTS_API_KEY || '').trim();

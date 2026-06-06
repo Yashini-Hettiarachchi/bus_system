@@ -1,18 +1,29 @@
 <!doctype html>
+<!-- Shell HTML file for the BusSync PWA.
+     Vite replaces /src/main.jsx at build time with the hashed bundle. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- SVG favicon shown in browser tabs -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Responsive viewport: matches device width, no initial zoom -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- PWA theme colour — tints the mobile browser chrome and task switcher -->
     <meta name="theme-color" content="#0d6fb4" />
+    <!-- Allow iOS users to add the app to the home screen as a full-screen app -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Keep the iOS status bar style consistent with the app theme -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- iOS home-screen icon (180×180 PNG) -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- PWA manifest — defines app name, icons, display mode, start URL, etc. -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>BusSync</title>
   </head>
   <body>
+    <!-- React mounts the entire component tree into this div -->
     <div id="root"></div>
+    <!-- Vite entry point — replaced by the hashed bundle during `npm run build` -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
