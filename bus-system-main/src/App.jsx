@@ -565,9 +565,17 @@ function App() {
     const sheetKey = reverseMap ? reverseMap[categoryName] : null;
 
     if (sheetKey) {
+      let currentVal = prefsDb[sheetKey];
+      if (currentVal === true || currentVal === "true" || currentVal === "Yes") currentVal = 1;
+      else if (isNaN(Number(currentVal)) || currentVal === "") currentVal = 0;
+      else currentVal = Number(currentVal);
+
+      let newVal = currentVal;
+      if (value === true) newVal += 1;
+
       const updatedPrefs = {
         ...prefsDb,
-        [sheetKey]: value,
+        [sheetKey]: newVal,
       };
       setPrefsDb(updatedPrefs);
 
@@ -585,7 +593,7 @@ function App() {
     } else {
       setCategoryInterest((current) => ({
         ...current,
-        [categoryName]: value,
+        [categoryName]: value === true ? (current[categoryName] || 0) + 1 : (current[categoryName] || 0),
       }));
     }
   };
@@ -771,9 +779,8 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
 
   // Build chart data for every category, using stored preferences if available.
   const categoryPreferenceChartData = ALL_CATEGORIES.map((category, index) => {
-    const preference = categoryInterest[category];
-    // Score is 1 for interested (true), 0 otherwise (including false, null, undefined)
-    const score = preference === true ? 1 : 0;
+    // Score is now the actual global vote count
+    const score = categoryInterest[category] || 0;
     return {
       category,
       score,
@@ -787,10 +794,10 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
     0,
   );
 
-  // Convert scores to percentages; if score is 1, it gets a fixed piece of the whole pie based on total categories.
+  // Convert scores to percentages based on total votes
   const categoryPreferencePercentages = categoryPreferenceChartData.map((item) => ({
     ...item,
-    percentage: item.score > 0 ? (100 / ALL_CATEGORIES.length) : 0,
+    percentage: categoryPreferenceTotalScore > 0 ? (item.score / categoryPreferenceTotalScore) * 100 : 0,
   }));
 
   const categoryTabCopy = {
@@ -948,11 +955,13 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
       Object.entries(prefsDb).forEach(([sheetKey, value]) => {
         const localName = keyMap[sheetKey];
         if (localName) {
+          let count = 0;
           if (value === true || value === "true" || value === "Yes") {
-            localizedInterest[localName] = true;
-          } else if (value === false || value === "false" || value === "No") {
-            localizedInterest[localName] = false;
+            count = 1;
+          } else if (!isNaN(Number(value)) && value !== "") {
+            count = Number(value);
           }
+          localizedInterest[localName] = count;
         }
       });
     }
@@ -1481,6 +1490,9 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
                             }}
                           />
                           <span style={{ color: "#12324a", fontWeight: 600 }}>{item.category}</span>
+                          <span style={{ fontSize: 13, color: "#4e6377", marginLeft: 8 }}>
+                            ({item.score} {language === "si" ? "මනාප" : "votes"})
+                          </span>
                         </span>
                         <span style={{ color: "#0d6fb4", fontWeight: 700, minWidth: 45, textAlign: "right" }}>
                           {item.percentage.toFixed(1)}%
