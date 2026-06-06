@@ -13,11 +13,12 @@ const LANGUAGE_OPTIONS = [
   { id: "si", label: "සිංහල" },
 ];
 
-// Main content tabs: News feed and Movie listing
+// Main content tabs: News feed, Movie listing, Feedback, and Category
 const TAB_OPTIONS = [
   { id: "news", label: "News" },
   { id: "movie", label: "Movie" },
   { id: "feedback", label: "Feedback" }, // Renamed category tab to Feedback
+  { id: "category", label: "Category" },
 ];
 
 // 10 bilingual feedback questions about the bus entertainment system.
@@ -1488,7 +1489,7 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
             </div>
           )}
           <div className="news-head">
-            <h2>{tab === "feedback" ? (language === "si" ? "ප්‍රතිපෝෂණ" : "Feedback") : "Updated on each language change"}</h2>
+            <h2>{tab === "category" ? (language === "si" ? "ප්‍රතිපෝෂණ" : "Feedback") : "Updated on each language change"}</h2>
             {/* <p>Updated on each language change</p> */}
           </div>
 
