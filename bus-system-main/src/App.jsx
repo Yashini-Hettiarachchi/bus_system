@@ -380,13 +380,14 @@ const buildFeaturedCategoryEntries = (articleList, language) => {
     language === "si" ? FEATURED_CATEGORY_MAP.si : FEATURED_CATEGORY_MAP.en;
   const categorized = {};
 
+  categoryMap.forEach((category) => {
+    categorized[category.name] = [];
+  });
+
   articleList.forEach((article) => {
     const text = `${article.title || ""} ${article.description || ""}`.toLowerCase();
     for (const category of categoryMap) {
       if (category.keywords.some((keyword) => text.includes(keyword))) {
-        if (!categorized[category.name]) {
-          categorized[category.name] = [];
-        }
         categorized[category.name].push(article);
         break;
       }
@@ -616,12 +617,22 @@ function App() {
         : categoryInterest[category] !== false,
   );
 
-  const createCategoryPromptState = (category, categoryArticles) => ({
-    category,
-    latestArticle: categoryArticles[0],
-    suggestedArticle: categoryArticles[1] || categoryArticles[0],
-    step: "viewed",
-  });
+  const createCategoryPromptState = (category, categoryArticles) => {
+    if (!categoryArticles || categoryArticles.length === 0) {
+      return {
+        category,
+        latestArticle: null,
+        suggestedArticle: null,
+        step: "interest",
+      };
+    }
+    return {
+      category,
+      latestArticle: categoryArticles[0],
+      suggestedArticle: categoryArticles[1] || categoryArticles[0],
+      step: "viewed",
+    };
+  };
 
   const openCategoryBusPrompt = (category = null, categoryArticles = null) => {
     setCategoryPrompt({
@@ -642,10 +653,6 @@ function App() {
   };
 
   const openCategoryPrompt = (category, categoryArticles) => {
-    if (!categoryArticles || categoryArticles.length === 0) {
-      return;
-    }
-
     setCategoryAsked((current) => ({
       ...current,
       [category]: true,
@@ -750,11 +757,15 @@ function App() {
     "#e11d48",
   ];
 
-  // Define all categories that should appear in the chart
-  const ALL_CATEGORIES = ["Crime", "Health", "Sports", "Techno"]; 
+  // Define all categories that should appear in the chart and quick slots
+  const ALL_CATEGORIES = (language === "si" ? FEATURED_CATEGORY_MAP.si : FEATURED_CATEGORY_MAP.en).map(c => c.name);
 
   // Build quickCategoryBusSlots using visibleFeaturedCategoryEntries to match Category News
-  const quickCategoryBusSlots = visibleFeaturedCategoryEntries.map(([category, categoryArticles]) => ({ category, categoryArticles }));
+const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
+  const entry = visibleFeaturedCategoryEntries.find(([c]) => c === category);
+  const categoryArticles = entry ? entry[1] : [];
+  return { category, categoryArticles };
+});
 
   const getQuickCategorySlot = (index) => quickCategoryBusSlots[index] || null;
 
@@ -1692,6 +1703,11 @@ function App() {
                             padding: 0,
                           }}
                         >
+                          {catArticles.length === 0 && (
+                            <p style={{ color: "#aaa", fontStyle: "italic", fontSize: "0.9rem", margin: "4px 0" }}>
+                              {language === "si" ? "මෙම කාණ්ඩය සඳහා පුවත් නොමැත." : "No news available for this category."}
+                            </p>
+                          )}
                           {catArticles.map((article) => {
                             let pubDate = "";
                             const sourceName = getCleanSourceName(article.source?.name);
