@@ -502,6 +502,7 @@ function App() {
   const [categoryAsked, setCategoryAsked] = useState({});
   const [categoryInterest, setCategoryInterest] = useState({});
   const [prefsDb, setPrefsDb] = useState({});
+  const [globalFeedbackResults, setGlobalFeedbackResults] = useState({});
   const categoryBlockRefs = useRef({});
 
   // Ref for the scrollable news section — used to detect scroll position
@@ -554,6 +555,19 @@ function App() {
       // Final save of the complete answer map before showing success state.
       const payload = buildFeedbackPayload(busAnswers);
       await postFeedback(payload);
+
+      // Optimistically update global results
+      setGlobalFeedbackResults((prev) => {
+        const next = { ...prev };
+        Object.keys(busAnswers).forEach((qId) => {
+          const answer = busAnswers[qId];
+          const qKey = `q${qId}`;
+          if (!next[qKey]) next[qKey] = {};
+          next[qKey][answer] = (next[qKey][answer] || 0) + 1;
+        });
+        return next;
+      });
+
       setSubmitStatus("done"); // Treat resolved fetch as success
     } catch {
       setSubmitStatus("error"); // Network-level failure (offline, DNS error, etc.)
@@ -947,6 +961,24 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
     loadCategoryPrefs();
   }, []);
 
+  // Load global feedback results on mount
+  useEffect(() => {
+    async function loadFeedbackResults() {
+      try {
+        const response = await fetch("/api/feedback-results");
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data === "object") {
+            setGlobalFeedbackResults(data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load feedback results:", err);
+      }
+    }
+    loadFeedbackResults();
+  }, []);
+
   // Sync prefsDb to categoryInterest whenever prefsDb or language changes
   useEffect(() => {
     const localizedInterest = {};
@@ -1281,22 +1313,75 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
                   <div className="gq-question-card" aria-live="polite">
                     {/* Success screen — shown after the GAS POST resolves */}
                     {submitStatus === "done" ? (
-                      <div className="gq-submit-success">
-                        <div className="gq-submit-icon">🎉</div>
-                        <h3 className="gq-submit-title">{busGameCopy.doneTitle}</h3>
-                        <p className="gq-submit-message">{busGameCopy.doneMessage}</p>
-                        <button
-                          type="button"
-                          className="gq-nav-btn"
-                          onClick={() => {
-                            setShowBus(false);
-                            setActiveBusQuestion(null);
-                            setBusAnswers({});
-                            setSubmitStatus("idle");
-                          }}
-                        >
-                          {busGameCopy.close}
-                        </button>
+                      <div className="gq-submit-success" style={{ textAlign: "left", padding: "10px 0" }}>
+                        <div style={{ textAlign: "center", marginBottom: 20 }}>
+                          <div className="gq-submit-icon">🎉</div>
+                          <h3 className="gq-submit-title">{busGameCopy.doneTitle}</h3>
+                          <p className="gq-submit-message">{busGameCopy.doneMessage}</p>
+                        </div>
+                        
+                        <div style={{ marginTop: 20 }}>
+                          <h4 style={{ color: "#12324a", marginBottom: 15, textAlign: "center" }}>
+                            {language === "si" ? "ගෝලීය ප්‍රතිඵල" : "Global Results"}
+                          </h4>
+                          <div style={{ maxHeight: "400px", overflowY: "auto", paddingRight: 10 }}>
+                            {BUS_GAME_QUESTIONS.map((q) => {
+                              const qKey = `q${q.id}`;
+                              const results = globalFeedbackResults[qKey] || {};
+                              
+                              // Calculate total votes for this question
+                              let totalVotes = 0;
+                              const optionVotes = q.answers.en.map((enAns, i) => {
+                                const siAns = q.answers.si[i];
+                                const votes = (Number(results[enAns]) || 0) + (Number(results[siAns]) || 0);
+                                totalVotes += votes;
+                                return {
+                                  label: q.answers[language][i],
+                                  votes
+                                };
+                              });
+
+                              return (
+                                <div key={q.id} style={{ marginBottom: 20, padding: 15, background: "#f8fbff", borderRadius: 10, border: "1px solid #e2e9f1" }}>
+                                  <p style={{ fontWeight: 600, color: "#12324a", marginBottom: 12, fontSize: 14 }}>
+                                    {q.id}. {q.question[language]}
+                                  </p>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {optionVotes.map((opt, i) => {
+                                      const percent = totalVotes > 0 ? (opt.votes / totalVotes) * 100 : 0;
+                                      return (
+                                        <div key={i}>
+                                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#4e6377", marginBottom: 4 }}>
+                                            <span>{opt.label}</span>
+                                            <span style={{ fontWeight: 600 }}>{opt.votes} ({percent.toFixed(1)}%)</span>
+                                          </div>
+                                          <div style={{ width: "100%", height: 8, background: "#e2e9f1", borderRadius: 4, overflow: "hidden" }}>
+                                            <div style={{ width: `${percent}%`, height: "100%", background: "#0d6fb4", borderRadius: 4, transition: "width 0.5s ease" }} />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "center", marginTop: 20 }}>
+                          <button
+                            type="button"
+                            className="gq-nav-btn"
+                            onClick={() => {
+                              setShowBus(false);
+                              setActiveBusQuestion(null);
+                              setBusAnswers({});
+                              setSubmitStatus("idle");
+                            }}
+                          >
+                            {busGameCopy.close}
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <>
