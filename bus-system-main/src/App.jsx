@@ -787,10 +787,10 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
     0,
   );
 
-  // Convert scores to percentages; if totalScore is 0, all percentages become 0
+  // Convert scores to percentages; if score is 1, it gets a fixed piece of the whole pie based on total categories.
   const categoryPreferencePercentages = categoryPreferenceChartData.map((item) => ({
     ...item,
-    percentage: categoryPreferenceTotalScore > 0 ? (item.score / categoryPreferenceTotalScore) * 100 : 0,
+    percentage: item.score > 0 ? (100 / ALL_CATEGORIES.length) : 0,
   }));
 
   const categoryTabCopy = {
@@ -1449,7 +1449,9 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
                       })()}
                       <circle r="52" cx="0" cy="0" fill="#ffffff" />
                       <text x="0" y="-4" textAnchor="middle" fontSize="12" fill="#4e6377">Total</text>
-                      <text x="0" y="15" textAnchor="middle" fontSize="16" fontWeight="700" fill="#12324a">100%</text>
+                      <text x="0" y="15" textAnchor="middle" fontSize="16" fontWeight="700" fill="#12324a">
+                        {Math.round(categoryPreferencePercentages.reduce((s, i) => s + i.percentage, 0))}%
+                      </text>
                     </g>
                   </svg>
 
