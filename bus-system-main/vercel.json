@@ -36,11 +36,27 @@
       "dest": "/api/news.js"
     },
     {
+      "src": "/api/ads-item",
+      "dest": "/api/ads-item.js"
+    },
+    {
+      "src": "/api/ads",
+      "dest": "/api/ads.js"
+    },
+    {
+      "src": "/api/media",
+      "dest": "/api/media.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
     {
       "handle": "filesystem"
+    },
+    {
+      "src": "/osuri/(.*)",
+      "dest": "/osuri/index.html"
     },
     {
       "src": "/(.*)",

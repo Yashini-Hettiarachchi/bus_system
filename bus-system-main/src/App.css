@@ -36,6 +36,23 @@
   box-shadow: 0 2px 8px rgba(32, 61, 87, 0.18);
 }
 
+.tab-dropdown {
+  border: 1px solid #cfdced;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #35546f;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 1rem;
+  min-width: 220px;
+  box-shadow: 0 2px 8px rgba(32, 61, 87, 0.08);
+}
+
+.tab-dropdown:focus {
+  outline: 3px solid rgba(13, 111, 180, 0.18);
+  outline-offset: 2px;
+}
+
 /* ─── 2. Movie section ──────────────────────────────────────────────────── */
 .movie-section {
   margin: 0 auto;
@@ -99,6 +116,67 @@
   margin-bottom: 8px !important;
   color: #0f679f !important;
   font-weight: 700;
+}
+
+.osuri-section {
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 24px 0 32px 0;
+}
+
+.osuri-head {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.osuri-head p {
+  margin: 8px auto 0;
+  color: #597084;
+  max-width: 62ch;
+}
+
+.osuri-card {
+  border: 1px solid #dce6f2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(24, 52, 76, 0.08);
+  padding: 16px;
+}
+
+.osuri-url-label {
+  margin: 0 0 12px;
+  color: #30495f;
+}
+
+.osuri-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.osuri-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  background: linear-gradient(135deg, #0d6fb4, #1ca07f);
+  color: #fff;
+}
+
+.osuri-btn-alt {
+  background: #eaf3fa;
+  color: #35546f;
+}
+
+.osuri-note {
+  margin: 12px 0 0;
+  color: #597084;
+  font-size: 0.95rem;
 }
 .category-cards-row {
   display: flex;

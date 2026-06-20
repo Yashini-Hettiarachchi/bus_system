@@ -18,7 +18,10 @@ const TAB_OPTIONS = [
   { id: "news", label: "News" },
   { id: "movie", label: "Movie" },
   { id: "category", label: "Category" }, // Added category tab
+  { id: "osuri", label: "Smart Ads" },
 ];
+
+const OSURI_APP_URL = (import.meta.env.VITE_OSURI_APP_URL || "/osuri/").trim();
 
 // 10 bilingual feedback questions about the bus entertainment system.
 // Each question has an id (1–10), bilingual question text, and 4 bilingual
@@ -468,6 +471,8 @@ const SHEET_KEY_TO_LOCAL_MAP = {
 };
 
 function App() {
+  const QUICK_QUESTION_SESSION_KEY = "bus_quick_question_shown";
+
   // Stable session id so multiple answer updates can target the same sheet row.
   // Persisted in localStorage to survive refreshes while the user is mid-survey.
   const getOrCreateSessionId = () => {
@@ -500,6 +505,13 @@ function App() {
   const [feedbackSessionId] = useState(() => getOrCreateSessionId());
   const [categoryPrompt, setCategoryPrompt] = useState(null);
   const [categoryAsked, setCategoryAsked] = useState({});
+  const [hasQuickQuestionShown, setHasQuickQuestionShown] = useState(() => {
+    try {
+      return sessionStorage.getItem(QUICK_QUESTION_SESSION_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
   const [categoryInterest, setCategoryInterest] = useState({});
   const [prefsDb, setPrefsDb] = useState({});
   const [globalFeedbackResults, setGlobalFeedbackResults] = useState({});
@@ -663,6 +675,15 @@ function App() {
       suggestedArticle: categoryArticles?.[1] || categoryArticles?.[0] || null,
       step: "bus",
     });
+  };
+
+  const markQuickQuestionShown = () => {
+    setHasQuickQuestionShown(true);
+    try {
+      sessionStorage.setItem(QUICK_QUESTION_SESSION_KEY, "true");
+    } catch {
+      // Ignore session storage write failures.
+    }
   };
 
   const setCategoryBlockRef = (category, node) => {
@@ -884,6 +905,11 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
       return;
     }
 
+    // Auto popup should appear only once per browser session.
+    if (hasQuickQuestionShown) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (categoryPrompt) {
@@ -910,6 +936,7 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
 
           const [, categoryArticles] = matched;
           setCategoryAsked((current) => ({ ...current, [category]: true }));
+          markQuickQuestionShown();
           openCategoryBusPrompt(category, categoryArticles);
           break;
         }
@@ -936,6 +963,7 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
     categoryAsked,
     categoryInterest,
     hasInterestedCategories,
+    hasQuickQuestionShown,
   ]);
 
   useEffect(() => {
@@ -1178,36 +1206,52 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
             gap: 8,
             margin: "16px 0",
             alignItems: "center",
+            justifyContent: "center",
+            flexWrap: "wrap",
           }}
         >
-          {TAB_OPTIONS.map((option, idx) => (
-            <>
-              <button
-                key={option.id}
-                type="button"
-                className={`tab-btn ${tab === option.id ? "active" : ""}`}
-                onClick={() => setTab(option.id)}
-              >
+          <label
+            htmlFor="tab-selector"
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: "hidden",
+              clip: "rect(0, 0, 0, 0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+          >
+            Select tab
+          </label>
+
+          <select
+            id="tab-selector"
+            className="tab-dropdown"
+            value={tab}
+            onChange={(event) => setTab(event.target.value)}
+            aria-label="Select tab"
+          >
+            {TAB_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
                 {option.label}
-              </button>
-                {/* Game icon appears after the Movie tab once the news list is scrolled.
-                  Tapping it opens the bus feedback modal. */}
-              {option.id === "movie" &&
-                tab === "news" &&
-                showGameName &&
-                (!showBus ? (
-                  <span
-                    role="button"
-                    aria-label="Open bus survey game"
-                    className="game-trigger-icon"
-                    style={{ marginLeft: 10, verticalAlign: "middle" }}
-                    onClick={() => setShowBus(true)}
-                  >
-                    🎮
-                  </span>
-                ) : null)}
-            </>
-          ))}
+              </option>
+            ))}
+          </select>
+
+          {tab === "news" && showGameName && !showBus ? (
+            <button
+              type="button"
+              aria-label="Open bus survey game"
+              className="game-trigger-icon"
+              style={{ marginLeft: 6 }}
+              onClick={() => setShowBus(true)}
+            >
+              🎮
+            </button>
+          ) : null}
         </div>
       </main>
 
@@ -2106,6 +2150,32 @@ const quickCategoryBusSlots = ALL_CATEGORIES.map((category) => {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {tab === "osuri" && (
+        <section className="osuri-section" aria-live="polite">
+          <div className="osuri-head">
+            <h2>Smart Ads</h2>
+            <p>
+              Open the ads dashboard from BusSync.
+              Once loaded at least once online, it can run in offline mode.
+            </p>
+          </div>
+
+          <div className="osuri-card">
+            {/* <p className="osuri-url-label">
+              Base URL: 
+            </p> */}
+            <div className="osuri-actions">
+              <a className="osuri-btn" href={OSURI_APP_URL} target="_blank" rel="noreferrer">
+                Open Dashboard
+              </a>
+            </div>
+            {/* <p className="osuri-note">
+              Tip: set <code>VITE_OSURI_APP_URL</code> to your deployed Osuri URL if it is hosted on a different domain.
+            </p> */}
+          </div>
         </section>
       )}
 

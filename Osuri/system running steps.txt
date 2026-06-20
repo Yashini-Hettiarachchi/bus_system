@@ -1,0 +1,17 @@
+backend running:
+pip install fastapi uvicorn sqlalchemy joblib scikit-learn python-multipart
+uvicorn main:app --reload or 
+
+python -m uvicorn main:app --reload
+
+
+frontend running:
+npm install
+npm start
+
+if model only
+python. (model name).py
+
+python train_ad_model.py 
+
+
